@@ -1,17 +1,20 @@
 import { useCallback, useState } from "react";
-import { Upload, X } from "lucide-react";
+import { ref, uploadBytes } from "firebase/storage";
+import { storage } from "@/lib/firebase";
+import { Upload, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 interface FileUploadZoneProps {
-  onFilesAdded: (files: File[]) => void;
+  onFilesUploaded: () => void;
 }
 
-export const FileUploadZone = ({ onFilesAdded }: FileUploadZoneProps) => {
+export const FileUploadZone = ({ onFilesUploaded }: FileUploadZoneProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -32,24 +35,46 @@ export const FileUploadZone = ({ onFilesAdded }: FileUploadZoneProps) => {
       const files = Array.from(e.dataTransfer.files);
       if (files.length > 0) {
         setUploadedFiles((prev) => [...prev, ...files]);
-        onFilesAdded(files);
-        toast.success(`${files.length} file(s) added successfully`);
+        toast.success(`${files.length} file(s) added`);
       }
     },
-    [onFilesAdded]
+    []
   );
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
       setUploadedFiles((prev) => [...prev, ...files]);
-      onFilesAdded(files);
-      toast.success(`${files.length} file(s) added successfully`);
+      toast.success(`${files.length} file(s) added`);
     }
   };
 
   const removeFile = (index: number) => {
     setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpload = async () => {
+    if (uploadedFiles.length === 0) {
+      toast.error("Please select files to upload");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const uploadPromises = uploadedFiles.map(async (file) => {
+        const storageRef = ref(storage, `files/${file.name}`);
+        await uploadBytes(storageRef, file);
+      });
+
+      await Promise.all(uploadPromises);
+      setUploadedFiles([]);
+      onFilesUploaded();
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload files");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -114,6 +139,28 @@ export const FileUploadZone = ({ onFilesAdded }: FileUploadZoneProps) => {
             ))}
           </div>
         </Card>
+      )}
+
+      {uploadedFiles.length > 0 && (
+        <div className="flex justify-end">
+          <Button 
+            onClick={handleUpload} 
+            disabled={isUploading}
+            className="bg-gradient-primary hover:opacity-90"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <Upload className="mr-2 h-4 w-4" />
+                Upload {uploadedFiles.length} {uploadedFiles.length === 1 ? 'File' : 'Files'}
+              </>
+            )}
+          </Button>
+        </div>
       )}
     </div>
   );

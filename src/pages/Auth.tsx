@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,18 +19,23 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate authentication - integrate with Firebase here
-    setTimeout(() => {
-      if (email && password) {
-        localStorage.setItem("isAuthenticated", "true");
-        localStorage.setItem("userEmail", email);
-        toast.success("Successfully signed in!");
-        navigate("/files");
-      } else {
-        toast.error("Please enter valid credentials");
-      }
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      toast.success("Successfully signed in!");
+      navigate("/files");
+    } catch (error: any) {
+      console.error("Sign in error:", error);
+      const errorMessage = error.code === "auth/invalid-credential" 
+        ? "Invalid email or password" 
+        : error.code === "auth/user-not-found"
+        ? "No account found with this email"
+        : error.code === "auth/wrong-password"
+        ? "Incorrect password"
+        : "Failed to sign in. Please try again.";
+      toast.error(errorMessage);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

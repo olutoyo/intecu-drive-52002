@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { onAuthStateChanged } from "firebase/auth";
+import { ref, listAll, getDownloadURL, getMetadata } from "firebase/storage";
+import { auth, storage } from "@/lib/firebase";
 import { FileSidebar } from "@/components/FileManagement/FileSidebar";
 import { FileHeader } from "@/components/FileManagement/FileHeader";
 import { FileCard, FileItem } from "@/components/FileManagement/FileCard";
 import { FileList } from "@/components/FileManagement/FileList";
 import { FileUploadZone } from "@/components/FileManagement/FileUploadZone";
 import { Button } from "@/components/ui/button";
-import { Download, Upload } from "lucide-react";
+import { Download, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -34,16 +37,69 @@ const Files = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
-  const [files, setFiles] = useState<FileItem[]>(mockFiles);
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(true);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
-      navigate("/auth");
-    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        navigate("/auth");
+      } else {
+        loadFiles();
+      }
+    });
+
+    return () => unsubscribe();
   }, [navigate]);
+
+  const loadFiles = async () => {
+    setIsLoadingFiles(true);
+    try {
+      const storageRef = ref(storage, 'files/');
+      const result = await listAll(storageRef);
+      
+      const filePromises = result.items.map(async (itemRef) => {
+        const metadata = await getMetadata(itemRef);
+        const url = await getDownloadURL(itemRef);
+        
+        return {
+          id: itemRef.name,
+          name: itemRef.name,
+          type: getFileType(metadata.contentType || ''),
+          size: formatFileSize(metadata.size),
+          modified: new Date(metadata.updated).toLocaleDateString(),
+          starred: false,
+        };
+      });
+
+      const loadedFiles = await Promise.all(filePromises);
+      setFiles(loadedFiles);
+    } catch (error) {
+      console.error("Error loading files:", error);
+      toast.error("Failed to load files");
+    } finally {
+      setIsLoadingFiles(false);
+    }
+  };
+
+  const getFileType = (contentType: string): FileItem['type'] => {
+    if (contentType.startsWith('image/')) return 'image';
+    if (contentType.startsWith('video/')) return 'video';
+    if (contentType.startsWith('audio/')) return 'audio';
+    if (contentType.includes('zip') || contentType.includes('rar') || contentType.includes('archive')) return 'archive';
+    if (contentType.includes('pdf') || contentType.includes('document') || contentType.includes('text')) return 'document';
+    return 'other';
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
 
   const handleFileSelect = (id: string) => {
     setSelectedFiles((prev) =>
@@ -63,9 +119,10 @@ const Files = () => {
     toast.success(`Downloading ${selectedFiles.length} file(s)...`);
   };
 
-  const handleFilesAdded = (newFiles: File[]) => {
-    // In a real app, you would upload these files to a server
-    console.log("Files to upload:", newFiles);
+  const handleFilesUploaded = async () => {
+    await loadFiles();
+    setIsUploadOpen(false);
+    toast.success("Files uploaded successfully");
   };
 
   const filteredFiles = files.filter((file) =>
@@ -117,13 +174,22 @@ const Files = () => {
                       Drag and drop files or click to browse
                     </DialogDescription>
                   </DialogHeader>
-                  <FileUploadZone onFilesAdded={handleFilesAdded} />
+                  <FileUploadZone onFilesUploaded={handleFilesUploaded} />
                 </DialogContent>
               </Dialog>
             </div>
           </div>
 
-          {viewMode === "grid" ? (
+          {isLoadingFiles ? (
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : filteredFiles.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+              <p className="text-lg">No files found</p>
+              <p className="text-sm">Upload files to get started</p>
+            </div>
+          ) : viewMode === "grid" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredFiles.map((file) => (
                 <FileCard
