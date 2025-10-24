@@ -28,8 +28,4 @@ const App = () => (
   </QueryClientProvider>
 );
 
-function App() {
-  return <h1>Hello, Lovable!</h1>;
-}
-
 export default App;
