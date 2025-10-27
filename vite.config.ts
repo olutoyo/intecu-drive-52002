@@ -8,8 +8,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    base: '/intecu-drive-52002/',
-  },
+    },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   
   resolve: {
