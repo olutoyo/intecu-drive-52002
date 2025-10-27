@@ -1,31 +1,39 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Files from "./pages/Files";
-import NotFound from "./pages/NotFound";
+//import { Toaster } from "@/components/ui/toaster";
+//import { Toaster as Sonner } from "@/components/ui/sonner";
+//import { TooltipProvider } from "@/components/ui/tooltip";
+//import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+//import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+//import Index from "./pages/Index";
+//import Auth from "./pages/Auth";
+//import Files from "./pages/Files";
+//import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+//const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/files" replace />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/files" element={<Files />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+//const App = () => (
+ // <QueryClientProvider client={queryClient}>
+   // <TooltipProvider>
+     // <Toaster />
+     // <Sonner />
+     // <BrowserRouter>
+       // <Routes>
+         // <Route path="/" element={<Navigate to="/files" replace />} />
+         // <Route path="/auth" element={<Auth />} />
+         // <Route path="/files" element={<Files />} />
+         // {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+         // <Route path="*" element={<NotFound />} />
+       // </Routes>
+     // </BrowserRouter>
+   // </TooltipProvider>
+ // </QueryClientProvider>
+//);
+
+//export default App; 
+
+
+  function App() {
+  return <h1>Hello, Lovable!</h1>;
+}
 
 export default App;
+  
