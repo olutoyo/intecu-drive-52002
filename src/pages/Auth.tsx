@@ -47,7 +47,7 @@ const Auth = () => {
           </div>
           <div>
             <CardTitle className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              INTECU File Management
+              INTECU File Management System
             </CardTitle>
             <CardDescription className="text-base mt-2">
               Sign in to access your files
